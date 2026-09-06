@@ -115,6 +115,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .cart-remove{background:none;border:none;color:#999;font-size:16px;cursor:pointer;padding:4px 8px;line-height:1}
 .cart-remove:hover{color:var(--red)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--char);color:#fff;padding:12px 22px;border-radius:8px;font-size:14px;z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.qty-stepper{display:inline-flex;align-items:center;border:1.5px solid var(--border);border-radius:6px;overflow:hidden}
+.qty-stepper button{width:28px;height:28px;border:none;background:#f5f4f0;font-size:16px;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.qty-stepper button:hover{background:#e8e6e0}
+.qty-stepper span{width:32px;text-align:center;font-size:14px;font-weight:600}
+.chair-img-wrap{position:relative}
+.img-dots{display:flex;justify-content:center;gap:6px;margin-top:8px;margin-bottom:8px}
+.img-dot{width:8px;height:8px;border-radius:50%;background:#ddd;cursor:pointer;border:none;padding:0}
+.img-dot.active{background:var(--red)}
 @media(max-width:600px){.container{padding:16px 14px 80px}.login-card{padding:32px 24px}.dash-grid{grid-template-columns:1fr}.chair-header{flex-direction:column}.chair-prices{text-align:left}.chair-options{flex-direction:column;align-items:flex-start}.btn-order{margin-left:0;width:100%}.modal-card{padding:28px 20px}.app-header{padding:0 12px}.h-sub{display:none}.user-name{display:none}.page-title{font-size:22px}.login-wrap::before{width:160px;height:160px}.header-right{gap:6px}.btn-header{padding:6px 10px;font-size:12px}}
 </style>
 </head>
@@ -298,8 +306,22 @@ function addPartsToCart(){
 }
 
 // ---------- REVOLVING ----------
-function colorSelectHtml(colors,idPrefix,idx){if(!colors||!colors.length)return'';return `<select class="color-select" id="${idPrefix}-color-${idx}"><option value="">Color</option>${colors.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`}
-function renderRevolving(){const c=document.getElementById('revolving-list');if(!revolvingData.length){c.innerHTML='<div class="empty-state"><div class="icon">💺</div><p>No revolving chairs added yet</p></div>';return}c.innerHTML=revolvingData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_medium_back*GST_RATE);const img=ch.image_url?`<img class="chair-img" src="${ch.image_url}" onerror="this.style.display='none'"/>`:'';const colorSel=colorSelectHtml(ch.color_options,'rev',i);return`<div class="chair-card" id="rev-${i}" data-back="mb" data-chrome="false">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="rev-price-${i}">${fmt(ch.price_medium_back)}</div><div class="chair-price-gst" id="rev-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_medium_back+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options"><div class="toggle-group"><button class="toggle-btn active" onclick="toggleRev(${i},'mb',this)">Medium Back</button><button class="toggle-btn" onclick="toggleRev(${i},'hb',this)">High Back</button></div><label class="chrome-check"><input type="checkbox" onchange="toggleRevChrome(${i})"/>Chrome Base (+${fmt(ch.chrome_upgrade_price||175)})</label>${colorSel}<button class="btn-order" onclick="addRevolvingToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
+function colorSelectHtml(colors,idPrefix,idx){if(!colors||!colors.length)return'';return `<select class="color-select" id="${idPrefix}-color-${idx}"><option value="">Select Color *</option>${colors.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`}
+function chairImagesHtml(ch,idPrefix,idx){
+  const imgs=(ch.image_urls&&ch.image_urls.length?ch.image_urls:(ch.image_url?[ch.image_url]:[])).filter(Boolean).slice(0,4);
+  if(!imgs.length)return'';
+  if(imgs.length===1)return`<img class="chair-img" src="${imgs[0]}" onerror="this.style.display='none'"/>`;
+  const dots=imgs.map((_,di)=>`<button class="img-dot${di===0?' active':''}" onclick="setChairImg('${idPrefix}',${idx},${di})"></button>`).join('');
+  return`<div class="chair-img-wrap"><img class="chair-img" id="${idPrefix}-img-${idx}" src="${imgs[0]}" data-images='${JSON.stringify(imgs)}' onerror="this.style.display='none'"/><div class="img-dots">${dots}</div></div>`;
+}
+function setChairImg(prefix,idx,imgIdx){
+  const imgEl=document.getElementById(`${prefix}-img-${idx}`);
+  if(!imgEl)return;
+  const imgs=JSON.parse(imgEl.dataset.images);
+  imgEl.src=imgs[imgIdx];
+  imgEl.parentElement.querySelectorAll('.img-dot').forEach((d,i)=>d.classList.toggle('active',i===imgIdx));
+}
+function renderRevolving(){const c=document.getElementById('revolving-list');if(!revolvingData.length){c.innerHTML='<div class="empty-state"><div class="icon">💺</div><p>No revolving chairs added yet</p></div>';return}c.innerHTML=revolvingData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_medium_back*GST_RATE);const img=chairImagesHtml(ch,'rev',i);const colorSel=colorSelectHtml(ch.color_options,'rev',i);return`<div class="chair-card" id="rev-${i}" data-back="mb" data-chrome="false">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="rev-price-${i}">${fmt(ch.price_medium_back)}</div><div class="chair-price-gst" id="rev-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_medium_back+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options"><div class="toggle-group"><button class="toggle-btn active" onclick="toggleRev(${i},'mb',this)">Medium Back</button><button class="toggle-btn" onclick="toggleRev(${i},'hb',this)">High Back</button></div><label class="chrome-check"><input type="checkbox" onchange="toggleRevChrome(${i})"/>Chrome Base (+${fmt(ch.chrome_upgrade_price||175)})</label>${colorSel}<button class="btn-order" onclick="addRevolvingToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
 function updateRevPrice(i){const ch=revolvingData[i];const card=document.getElementById('rev-'+i);const back=card.dataset.back;const chrome=card.dataset.chrome==='true';const base=back==='hb'?ch.price_high_back:ch.price_medium_back;const price=base+(chrome?(ch.chrome_upgrade_price||175):0);const gst=Math.round(price*GST_RATE);document.getElementById('rev-price-'+i).textContent=fmt(price);document.getElementById('rev-gst-'+i).innerHTML=`+ ${fmt(gst)} GST = <strong>${fmt(price+gst)}</strong>`}
 function toggleRev(i,type,btn){const card=document.getElementById('rev-'+i);card.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');card.dataset.back=type;updateRevPrice(i)}
 function toggleRevChrome(i){const card=document.getElementById('rev-'+i);card.dataset.chrome=card.querySelector('.chrome-check input').checked;updateRevPrice(i)}
@@ -308,26 +330,31 @@ function addRevolvingToCart(i){
   const label=back==='hb'?'High Back':'Medium Back';const base=back==='hb'?ch.price_high_back:ch.price_medium_back;
   const price=base+(chrome?(ch.chrome_upgrade_price||175):0);
   const colorSel=document.getElementById(`rev-color-${i}`);const color=colorSel?colorSel.value:'';
-  let addition=label;if(chrome)addition+=', Chrome Base';if(color)addition+=', Color: '+color;
-  addToCart({type:'revolving',name:ch.name,addition,unitPrice:price});
+  if(ch.color_options&&ch.color_options.length&&!color){alert('Please select a color for '+ch.name+' before adding to cart');return}
+  const name=color?`${ch.name} - ${color}`:ch.name;
+  let addition=label;if(chrome)addition+=', Chrome Base';
+  addToCart({type:'revolving',name,addition,unitPrice:price});
 }
 
 // ---------- VISITOR ----------
-function renderVisitor(){const c=document.getElementById('visitor-list');if(!visitorData.length){c.innerHTML='<div class="empty-state"><div class="icon">🪑</div><p>No visitor chairs added yet</p></div>';return}c.innerHTML=visitorData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_revolving*GST_RATE);const hasVis=ch.price_visitor&&ch.price_visitor!=='NA';const img=ch.image_url?`<img class="chair-img" src="${ch.image_url}" onerror="this.style.display='none'"/>`:'';const colorSel=colorSelectHtml(ch.color_options,'vis',i);return`<div class="chair-card" id="vis-${i}" data-variant="rev">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="vis-price-${i}">${fmt(ch.price_revolving)}</div><div class="chair-price-gst" id="vis-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_revolving+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options">${hasVis?`<div class="toggle-group"><button class="toggle-btn active" onclick="toggleVis(${i},'rev',this)">Revolving</button><button class="toggle-btn" onclick="toggleVis(${i},'vis',this)">Visitor</button></div>`:''}${colorSel}<button class="btn-order" onclick="addVisitorToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
+function renderVisitor(){const c=document.getElementById('visitor-list');if(!visitorData.length){c.innerHTML='<div class="empty-state"><div class="icon">🪑</div><p>No visitor chairs added yet</p></div>';return}c.innerHTML=visitorData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_revolving*GST_RATE);const hasVis=ch.price_visitor&&ch.price_visitor!=='NA';const img=chairImagesHtml(ch,'vis',i);const colorSel=colorSelectHtml(ch.color_options,'vis',i);return`<div class="chair-card" id="vis-${i}" data-variant="rev">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="vis-price-${i}">${fmt(ch.price_revolving)}</div><div class="chair-price-gst" id="vis-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_revolving+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options">${hasVis?`<div class="toggle-group"><button class="toggle-btn active" onclick="toggleVis(${i},'rev',this)">Revolving</button><button class="toggle-btn" onclick="toggleVis(${i},'vis',this)">Visitor</button></div>`:''}${colorSel}<button class="btn-order" onclick="addVisitorToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
 function toggleVis(i,type,btn){const ch=visitorData[i];const card=document.getElementById('vis-'+i);card.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');card.dataset.variant=type;const price=type==='vis'?ch.price_visitor:ch.price_revolving;const gst=Math.round(price*GST_RATE);document.getElementById('vis-price-'+i).textContent=fmt(price);document.getElementById('vis-gst-'+i).innerHTML=`+ ${fmt(gst)} GST = <strong>${fmt(price+gst)}</strong>`}
 function addVisitorToCart(i){
   const ch=visitorData[i];const card=document.getElementById('vis-'+i);const variant=card.dataset.variant==='vis'?'Visitor':'Revolving';
   const price=variant==='Visitor'?ch.price_visitor:ch.price_revolving;
   const colorSel=document.getElementById(`vis-color-${i}`);const color=colorSel?colorSel.value:'';
-  let addition=variant;if(color)addition+=', Color: '+color;
-  addToCart({type:'visitor',name:ch.name,addition,unitPrice:price});
+  if(ch.color_options&&ch.color_options.length&&!color){alert('Please select a color for '+ch.name+' before adding to cart');return}
+  const name=color?`${ch.name} - ${color}`:ch.name;
+  addToCart({type:'visitor',name,addition:variant,unitPrice:price});
 }
 
 // ---------- CAFETERIA ----------
-function renderCafeteria(){const c=document.getElementById('cafeteria-list');if(!cafeteriaData.length){c.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No cafeteria chairs added yet.<br>Add them via the Supabase Table Editor.</p></div>';return}c.innerHTML=cafeteriaData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price*GST_RATE);const img=ch.image_url?`<img class="chair-img" src="${ch.image_url}" onerror="this.style.display='none'"/>`:'';const colorSel=colorSelectHtml(ch.color_options,'caf',i);return`<div class="chair-card">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main">${fmt(ch.price)}</div><div class="chair-price-gst">+ ${fmt(gst)} GST = <strong>${fmt(ch.price+gst)}</strong></div></div></div>${specs?`<div class="chair-specs">${specs}</div>`:''}<div class="chair-options">${colorSel}<button class="btn-order" onclick="addCafeteriaToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
+function renderCafeteria(){const c=document.getElementById('cafeteria-list');if(!cafeteriaData.length){c.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No cafeteria chairs added yet.<br>Add them via the Supabase Table Editor.</p></div>';return}c.innerHTML=cafeteriaData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price*GST_RATE);const img=chairImagesHtml(ch,'caf',i);const colorSel=colorSelectHtml(ch.color_options,'caf',i);return`<div class="chair-card">${img}<div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main">${fmt(ch.price)}</div><div class="chair-price-gst">+ ${fmt(gst)} GST = <strong>${fmt(ch.price+gst)}</strong></div></div></div>${specs?`<div class="chair-specs">${specs}</div>`:''}<div class="chair-options">${colorSel}<button class="btn-order" onclick="addCafeteriaToCart(${i})">🛒 Add to Cart</button></div></div>`}).join('')}
 function addCafeteriaToCart(i){
   const ch=cafeteriaData[i];const colorSel=document.getElementById(`caf-color-${i}`);const color=colorSel?colorSel.value:'';
-  addToCart({type:'cafeteria',name:ch.name,addition:color?'Color: '+color:'',unitPrice:ch.price});
+  if(ch.color_options&&ch.color_options.length&&!color){alert('Please select a color for '+ch.name+' before adding to cart');return}
+  const name=color?`${ch.name} - ${color}`:ch.name;
+  addToCart({type:'cafeteria',name,addition:'',unitPrice:ch.price});
 }
 
 // ---------- CART ----------
@@ -335,12 +362,13 @@ function updateCartBadge(){const btn=document.getElementById('cart-btn');btn.tex
 function addToCart(item){item.id=cartIdCounter++;item.qty=1;cart.push(item);updateCartBadge();showToast('Added to cart')}
 function removeFromCart(id){cart=cart.filter(c=>c.id!==id);renderCart();updateCartBadge()}
 function updateCartQty(id,qty){qty=Math.max(1,parseInt(qty)||1);const item=cart.find(c=>c.id===id);if(item)item.qty=qty;renderCart()}
+function changeQty(id,delta){const item=cart.find(c=>c.id===id);if(item){item.qty=Math.max(1,item.qty+delta);renderCart()}}
 function cartTotals(){const subtotal=cart.reduce((s,i)=>s+i.unitPrice*i.qty,0);const gst=Math.round(subtotal*GST_RATE);return{subtotal,gst,total:subtotal+gst}}
 function renderCart(){
   const listEl=document.getElementById('cart-items');
   if(!cart.length){listEl.innerHTML='<div class="empty-state"><div class="icon">🛒</div><p>Your cart is empty</p></div>';document.getElementById('cart-footer').classList.add('hidden');return}
   document.getElementById('cart-footer').classList.remove('hidden');
-  listEl.innerHTML=cart.map(item=>`<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">${item.name}</div>${item.addition?`<div class="cart-item-add">${item.addition}</div>`:''}<div class="cart-item-price">${fmt(item.unitPrice)} each</div></div><input type="number" class="qty-input" min="1" value="${item.qty}" onchange="updateCartQty(${item.id},this.value)"/><div class="cart-item-total">${fmt(item.unitPrice*item.qty)}</div><button class="cart-remove" onclick="removeFromCart(${item.id})">✕</button></div>`).join('');
+  listEl.innerHTML=cart.map(item=>`<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">${item.name}</div>${item.addition?`<div class="cart-item-add">${item.addition}</div>`:''}<div class="cart-item-price">${fmt(item.unitPrice)} each</div></div><div class="qty-stepper"><button onclick="changeQty(${item.id},-1)">−</button><span>${item.qty}</span><button onclick="changeQty(${item.id},1)">+</button></div><div class="cart-item-total">${fmt(item.unitPrice*item.qty)}</div><button class="cart-remove" onclick="removeFromCart(${item.id})">✕</button></div>`).join('');
   const t=cartTotals();
   document.getElementById('cart-subtotal').textContent=fmt(t.subtotal);
   document.getElementById('cart-gst').textContent=fmt(t.gst);
