@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AHL — Chair Pricing Portal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🪑</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f2f0ed;--surface:#fff;--text:#1c1c1c;--text-s:#5c5c5c;--border:#dedbd5;--red:#d41920;--red-dk:#b5161c;--red-lt:#fdf0f0;--char:#1c1c1c;--radius:10px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+.hidden{display:none!important}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--char);position:relative;overflow:hidden}
+.login-wrap::before{content:'';position:absolute;bottom:-40px;right:-40px;width:260px;height:260px;background:var(--red);clip-path:polygon(100% 0,0% 100%,100% 100%);opacity:.9}
+.login-wrap::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--red)}
+.login-card{background:var(--surface);border-radius:16px;padding:48px 36px;width:100%;max-width:400px;position:relative;z-index:2}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.logo-mark{width:44px;height:44px;background:var(--char);border-radius:8px;display:flex;align-items:center;justify-content:center;position:relative}
+.logo-mark::after{content:'';position:absolute;right:6px;top:8px;bottom:8px;width:2.5px;background:var(--red);border-radius:2px}
+.logo-mark span{font-size:18px;font-weight:800;color:#fff;letter-spacing:1px}
+.login-brand h1{font-size:26px;font-weight:800;letter-spacing:2px}
+.login-tagline{font-size:12px;color:var(--text-s);letter-spacing:1.5px;margin-bottom:6px}
+.login-desc{font-size:14px;color:var(--text-s);margin:16px 0 28px;padding-top:16px;border-top:1.5px solid var(--border)}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--text-s)}
+.form-group input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;transition:border-color .2s;background:#fff}
+.form-group input:focus{outline:none;border-color:var(--red)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 24px;border:none;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--red);color:#fff;width:100%}
+.btn-primary:hover{background:var(--red-dk)}
+.btn-whatsapp{background:#25d366;color:#fff;width:100%;font-size:16px;padding:14px 24px}
+.btn-whatsapp:hover{background:#1fb855}
+.login-error{color:var(--red);font-size:13px;margin-top:8px;min-height:20px}
+.app-header{background:var(--char);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;height:60px;border-bottom:3px solid var(--red)}
+.header-brand{display:flex;align-items:center;gap:10px}
+.h-logo{font-size:20px;font-weight:800;letter-spacing:2px;position:relative;padding-right:12px}
+.h-logo::after{content:'';position:absolute;right:0;top:2px;bottom:2px;width:2.5px;background:var(--red);border-radius:2px}
+.h-sub{font-size:11px;color:#999;letter-spacing:1px}
+.header-right{display:flex;align-items:center;gap:16px}
+.user-name{font-size:13px;color:#aaa}
+.btn-logout{background:0 0;border:1px solid #555;color:#ccc;padding:6px 14px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-logout:hover{border-color:var(--red);color:#fff}
+.container{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+.back-bar{margin-bottom:20px}
+.back-link{font-size:14px;color:var(--text-s);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.back-link:hover{color:var(--red)}
+.page-title{font-size:26px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+.page-subtitle{font-size:15px;color:var(--text-s);margin-bottom:28px}
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.dash-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:28px 24px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.dash-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--red);transform:scaleX(0);transition:transform .25s;transform-origin:left}
+.dash-card:hover::before{transform:scaleX(1)}
+.dash-card:hover{border-color:#ccc;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.dash-card .icon{font-size:28px;margin-bottom:14px}
+.dash-card h3{font-size:17px;font-weight:700;margin-bottom:6px}
+.dash-card p{font-size:13px;color:var(--text-s);line-height:1.5}
+.config-section{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:12px}
+.config-section h4{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-s);letter-spacing:.3px}
+.config-select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a5a5a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;cursor:pointer;appearance:none}
+.config-select:focus{outline:none;border-color:var(--red)}
+.price-box{background:var(--surface);border:2px solid var(--char);border-radius:var(--radius);padding:24px;position:sticky;bottom:0;margin-top:20px;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.price-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:15px}
+.price-row.total{border-top:2px solid var(--char);margin-top:8px;padding-top:12px;font-size:22px;font-weight:800;color:var(--red)}
+.price-label{color:var(--text-s)}
+.price-value{font-weight:600}
+.delivery-note{font-size:12px;color:var(--text-s);margin-top:10px;font-style:italic}
+.chair-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:12px;transition:all .2s}
+.chair-card:hover{border-color:#c0c0c0;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.chair-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.chair-name{font-size:18px;font-weight:700}
+.chair-prices{text-align:right}
+.chair-price-main{font-size:24px;font-weight:800;color:var(--char)}
+.chair-price-gst{font-size:12px;color:var(--text-s)}
+.chair-price-gst strong{color:var(--red)}
+.chair-specs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.spec-tag{font-size:11px;background:#f5f4f0;color:var(--text-s);padding:4px 10px;border-radius:20px;border:1px solid #eae8e3}
+.chair-options{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.toggle-group{display:inline-flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
+.toggle-btn{padding:8px 16px;font-size:13px;font-family:inherit;font-weight:500;border:none;background:#fff;cursor:pointer;transition:all .15s}
+.toggle-btn.active{background:var(--char);color:#fff}
+.chrome-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-s);cursor:pointer}
+.chrome-check input{cursor:pointer;accent-color:var(--red);width:16px;height:16px}
+.btn-order{margin-left:auto;padding:8px 20px;font-size:13px;background:var(--red);color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-order:hover{background:var(--red-dk)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:24px}
+.modal-card{background:var(--surface);border-radius:16px;padding:36px 28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;position:relative}
+.modal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--red);border-radius:16px 16px 0 0}
+.modal-card h3{font-size:20px;font-weight:700;margin-bottom:6px}
+.modal-subtitle{font-size:14px;color:var(--text-s);margin-bottom:20px}
+.order-summary{background:#f8f7f4;border-radius:8px;padding:16px;margin-bottom:20px;font-size:14px;border-left:3px solid var(--red)}
+.order-summary .item-name{font-weight:700;margin-bottom:4px}
+.btn-cancel{background:#eee;color:var(--text);width:100%;margin-top:10px}
+.btn-cancel:hover{background:#ddd}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-s)}
+.empty-state .icon{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+.app-footer{text-align:center;padding:20px;font-size:11px;color:#aaa;letter-spacing:.3px}
+.app-footer a{color:var(--red);text-decoration:none}
+@media(max-width:600px){.container{padding:16px 14px 80px}.login-card{padding:32px 24px}.dash-grid{grid-template-columns:1fr}.chair-header{flex-direction:column}.chair-prices{text-align:left}.chair-options{flex-direction:column;align-items:flex-start}.btn-order{margin-left:0;width:100%}.modal-card{padding:28px 20px}.app-header{padding:0 16px}.h-sub{display:none}.page-title{font-size:22px}.login-wrap::before{width:160px;height:160px}}
+</style>
+</head>
+<body>
+<div id="login-page" class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand"><div class="logo-mark"><span>A</span></div><h1>AHL</h1></div>
+    <div class="login-tagline">CHAIRS &nbsp;•&nbsp; MODULAR OFFICE SPACES &nbsp;•&nbsp; SOFT SEATING</div>
+    <p class="login-desc">Supplier pricing portal — log in with your credentials to view chair pricing and place orders.</p>
+    <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/></div>
+    <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="Your password" autocomplete="current-password"/></div>
+    <button class="btn btn-primary" id="login-btn">Log in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+<div id="app" class="hidden">
+  <header class="app-header">
+    <div class="header-brand"><div class="h-logo">AHL</div><span class="h-sub">PRICING PORTAL</span></div>
+    <div class="header-right"><span class="user-name" id="user-email"></span><button class="btn-logout" id="logout-btn">Log out</button></div>
+  </header>
+  <div class="container">
+    <div id="page-dashboard">
+      <h1 class="page-title">Chair Pricing</h1>
+      <p class="page-subtitle">Select how you'd like to get pricing</p>
+      <div class="dash-grid">
+        <div class="dash-card" onclick="showPage('parts')"><div class="icon">🔩</div><h3>Price by Parts</h3><p>Build a custom chair by selecting individual components — base, wheel, mechanism, back, handle, and more.</p></div>
+        <div class="dash-card" onclick="showPage('revolving')"><div class="icon">💺</div><h3>Revolving Chair</h3><p>Browse workstation chair models with medium-back and high-back pricing.</p></div>
+        <div class="dash-card" onclick="showPage('visitor')"><div class="icon">🪑</div><h3>Visitor Chair</h3><p>Fixed and revolving visitor chair models with specifications.</p></div>
+        <div class="dash-card" onclick="showPage('cafeteria')"><div class="icon">🍽️</div><h3>Cafeteria Chair</h3><p>Cafeteria and dining chair models for bulk orders.</p></div>
+      </div>
+    </div>
+    <div id="page-parts" class="hidden">
+      <div class="back-bar"><a class="back-link" onclick="showPage('dashboard')">← Back</a></div>
+      <h1 class="page-title">Build by Parts</h1>
+      <p class="page-subtitle">Select one option from each component to calculate the total price</p>
+      <div id="parts-form"></div>
+      <div class="price-box">
+        <div class="price-row"><span class="price-label">Subtotal</span><span class="price-value" id="parts-subtotal">₹0</span></div>
+        <div class="price-row"><span class="price-label">GST (18%)</span><span class="price-value" id="parts-gst">₹0</span></div>
+        <div class="price-row total"><span>Total</span><span id="parts-total">₹0</span></div>
+        <p class="delivery-note">+ Delivery charges as per actual. Prices quoted are Ex-Factory.</p>
+        <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="openOrder('by_parts')">Confirm &amp; Send via WhatsApp</button>
+      </div>
+    </div>
+    <div id="page-revolving" class="hidden">
+      <div class="back-bar"><a class="back-link" onclick="showPage('dashboard')">← Back</a></div>
+      <h1 class="page-title">Revolving Chairs</h1>
+      <p class="page-subtitle">Workstation chairs — toggle Medium Back / High Back. Chrome Beeta Base upgrade available.</p>
+      <div id="revolving-list"></div>
+    </div>
+    <div id="page-visitor" class="hidden">
+      <div class="back-bar"><a class="back-link" onclick="showPage('dashboard')">← Back</a></div>
+      <h1 class="page-title">Visitor Chairs</h1>
+      <p class="page-subtitle">Available in revolving and visitor (fixed-leg) variants</p>
+      <div id="visitor-list"></div>
+    </div>
+    <div id="page-cafeteria" class="hidden">
+      <div class="back-bar"><a class="back-link" onclick="showPage('dashboard')">← Back</a></div>
+      <h1 class="page-title">Cafeteria Chairs</h1>
+      <p class="page-subtitle">Cafeteria and dining chair models</p>
+      <div id="cafeteria-list"></div>
+    </div>
+  </div>
+  <div class="app-footer">Adeshwar Homes Limited &nbsp;•&nbsp; Bangalore &nbsp;•&nbsp; <a href="mailto:advantagechairs.adhl@gmail.com">advantagechairs.adhl@gmail.com</a></div>
+</div>
+<div id="order-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>Confirm Your Order</h3>
+    <p class="modal-subtitle">Review details and send via WhatsApp</p>
+    <div class="order-summary" id="order-summary"></div>
+    <div class="form-group"><label>Customer phone number</label><input type="tel" id="order-phone" placeholder="+91 98765 43210"/></div>
+    <div class="form-group"><label>Delivery location</label><input type="text" id="order-location" placeholder="City or full address"/></div>
+    <div class="form-group"><label>Quantity</label><input type="number" id="order-qty" placeholder="1" min="1" value="1"/></div>
+    <div class="form-group"><label>Notes (optional)</label><input type="text" id="order-notes" placeholder="Any special requests"/></div>
+    <button class="btn btn-whatsapp" id="send-whatsapp-btn">📱 Send Order via WhatsApp</button>
+    <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+<script>
+const SUPABASE_URL='https://qgadczcrtwxbxkenuawn.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYWRjemNydHd4YnhrZW51YXduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2NzkwNzQsImV4cCI6MjEwNDI1NTA3NH0.EbqL_PIBfv7JDwzKdd6mTaXuMephgKRHF58BQ5NVRyg';
+const WHATSAPP_NUMBER='919739166940';
+const GST_RATE=0.18;
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+let currentUser=null,partsData={categories:[],options:[]},revolvingData=[],visitorData=[],cafeteriaData=[],currentOrder={};
+function fmt(n){return'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0})}
+async function initAuth(){const{data:{session}}=await sb.auth.getSession();if(session){currentUser=session.user;showApp()}}
+document.getElementById('login-btn').addEventListener('click',async()=>{const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const err=document.getElementById('login-error');err.textContent='';if(!email||!pass){err.textContent='Enter email and password';return}const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;return}currentUser=data.user;showApp()});
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-btn').click()});
+document.getElementById('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();currentUser=null;document.getElementById('app').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden')});
+async function showApp(){document.getElementById('login-page').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('user-email').textContent=currentUser.email;await loadAllData();showPage('dashboard')}
+async function loadAllData(){const[a,b,c,d,e]=await Promise.all([sb.from('part_categories').select('*').order('display_order'),sb.from('part_options').select('*').order('display_order'),sb.from('revolving_chairs').select('*').order('display_order'),sb.from('visitor_chairs').select('*').order('display_order'),sb.from('cafeteria_chairs').select('*').order('display_order')]);partsData.categories=a.data||[];partsData.options=b.data||[];revolvingData=c.data||[];visitorData=d.data||[];cafeteriaData=e.data||[];renderParts();renderRevolving();renderVisitor();renderCafeteria()}
+function showPage(p){['dashboard','parts','revolving','visitor','cafeteria'].forEach(x=>document.getElementById('page-'+x).classList.add('hidden'));document.getElementById('page-'+p).classList.remove('hidden');window.scrollTo(0,0)}
+function renderParts(){const c=document.getElementById('parts-form');c.innerHTML='';partsData.categories.forEach(cat=>{const opts=partsData.options.filter(o=>o.category_id===cat.id);const s=document.createElement('div');s.className='config-section';s.innerHTML=`<h4>${cat.name}</h4><select class="config-select" data-category="${cat.id}" onchange="calcParts()"><option value="">— Select ${cat.name} —</option>${opts.map(o=>`<option value="${o.price}" data-name="${o.name}">${o.name} — ${fmt(o.price)}</option>`).join('')}</select>`;c.appendChild(s)})}
+function calcParts(){let sub=0;document.querySelectorAll('#parts-form .config-select').forEach(s=>{sub+=Number(s.value)||0});const gst=Math.round(sub*GST_RATE);document.getElementById('parts-subtotal').textContent=fmt(sub);document.getElementById('parts-gst').textContent=fmt(gst);document.getElementById('parts-total').textContent=fmt(sub+gst)}
+function renderRevolving(){const c=document.getElementById('revolving-list');if(!revolvingData.length){c.innerHTML='<div class="empty-state"><div class="icon">💺</div><p>No revolving chairs added yet</p></div>';return}c.innerHTML=revolvingData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_medium_back*GST_RATE);return`<div class="chair-card" id="rev-${i}" data-back="mb" data-chrome="false"><div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="rev-price-${i}">${fmt(ch.price_medium_back)}</div><div class="chair-price-gst" id="rev-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_medium_back+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options"><div class="toggle-group"><button class="toggle-btn active" onclick="toggleRev(${i},'mb',this)">Medium Back</button><button class="toggle-btn" onclick="toggleRev(${i},'hb',this)">High Back</button></div><label class="chrome-check"><input type="checkbox" onchange="toggleRevChrome(${i})"/>Chrome Base (+${fmt(ch.chrome_upgrade_price||175)})</label><button class="btn-order" onclick="orderRevolving(${i})">Order →</button></div></div>`}).join('')}
+function updateRevPrice(i){const ch=revolvingData[i];const card=document.getElementById('rev-'+i);const back=card.dataset.back;const chrome=card.dataset.chrome==='true';const base=back==='hb'?ch.price_high_back:ch.price_medium_back;const price=base+(chrome?(ch.chrome_upgrade_price||175):0);const gst=Math.round(price*GST_RATE);document.getElementById('rev-price-'+i).textContent=fmt(price);document.getElementById('rev-gst-'+i).innerHTML=`+ ${fmt(gst)} GST = <strong>${fmt(price+gst)}</strong>`}
+function toggleRev(i,type,btn){const card=document.getElementById('rev-'+i);card.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');card.dataset.back=type;updateRevPrice(i)}
+function toggleRevChrome(i){const card=document.getElementById('rev-'+i);card.dataset.chrome=card.querySelector('.chrome-check input').checked;updateRevPrice(i)}
+function renderVisitor(){const c=document.getElementById('visitor-list');if(!visitorData.length){c.innerHTML='<div class="empty-state"><div class="icon">🪑</div><p>No visitor chairs added yet</p></div>';return}c.innerHTML=visitorData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price_revolving*GST_RATE);const hasVis=ch.price_visitor&&ch.price_visitor!=='NA';return`<div class="chair-card" id="vis-${i}" data-variant="rev"><div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main" id="vis-price-${i}">${fmt(ch.price_revolving)}</div><div class="chair-price-gst" id="vis-gst-${i}">+ ${fmt(gst)} GST = <strong>${fmt(ch.price_revolving+gst)}</strong></div></div></div><div class="chair-specs">${specs}</div><div class="chair-options">${hasVis?`<div class="toggle-group"><button class="toggle-btn active" onclick="toggleVis(${i},'rev',this)">Revolving</button><button class="toggle-btn" onclick="toggleVis(${i},'vis',this)">Visitor</button></div>`:''}<button class="btn-order" onclick="orderVisitor(${i})">Order →</button></div></div>`}).join('')}
+function toggleVis(i,type,btn){const ch=visitorData[i];const card=document.getElementById('vis-'+i);card.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');card.dataset.variant=type;const price=type==='vis'?ch.price_visitor:ch.price_revolving;const gst=Math.round(price*GST_RATE);document.getElementById('vis-price-'+i).textContent=fmt(price);document.getElementById('vis-gst-'+i).innerHTML=`+ ${fmt(gst)} GST = <strong>${fmt(price+gst)}</strong>`}
+function renderCafeteria(){const c=document.getElementById('cafeteria-list');if(!cafeteriaData.length){c.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No cafeteria chairs added yet.<br>Add them via the Supabase Table Editor.</p></div>';return}c.innerHTML=cafeteriaData.map((ch,i)=>{const specs=(ch.specs||[]).map(s=>`<span class="spec-tag">${s}</span>`).join('');const gst=Math.round(ch.price*GST_RATE);return`<div class="chair-card"><div class="chair-header"><div class="chair-name">${ch.name}</div><div class="chair-prices"><div class="chair-price-main">${fmt(ch.price)}</div><div class="chair-price-gst">+ ${fmt(gst)} GST = <strong>${fmt(ch.price+gst)}</strong></div></div></div>${specs?`<div class="chair-specs">${specs}</div>`:''}<div class="chair-options"><button class="btn-order" onclick="orderCafeteria(${i})">Order →</button></div></div>`}).join('')}
+function openOrder(type){if(type==='by_parts'){let items=[],sub=0;document.querySelectorAll('#parts-form .config-select').forEach(s=>{if(s.value){items.push({component:partsData.categories.find(c=>c.id==s.dataset.category)?.name||'',selection:s.options[s.selectedIndex].dataset.name,price:Number(s.value)});sub+=Number(s.value)}});if(!items.length){alert('Please select at least one component');return}const gst=Math.round(sub*GST_RATE);currentOrder={type:'by_parts',label:'Custom Chair (By Parts)',items,subtotal:sub,gst,total:sub+gst}}const summary=document.getElementById('order-summary');let html=`<div class="item-name">${currentOrder.label}</div>`;if(currentOrder.items)html+=currentOrder.items.map(it=>`<div style="font-size:13px;color:#666">${it.component}: ${it.selection} — ${fmt(it.price)}</div>`).join('');if(currentOrder.details)html+=`<div style="font-size:13px;color:#666">${currentOrder.details}</div>`;html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid #ddd"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(currentOrder.subtotal)}</span></div><div style="display:flex;justify-content:space-between"><span>GST 18%</span><span>${fmt(currentOrder.gst)}</span></div><div style="display:flex;justify-content:space-between;font-weight:700;font-size:17px;margin-top:4px;color:var(--red)"><span>Total</span><span>${fmt(currentOrder.total)}</span></div><div style="font-size:11px;color:#999;margin-top:6px;font-style:italic">+ Delivery as per actual (Ex-Factory)</div></div>`;summary.innerHTML=html;document.getElementById('order-phone').value='';document.getElementById('order-location').value='';document.getElementById('order-qty').value='1';document.getElementById('order-notes').value='';document.getElementById('order-modal').classList.remove('hidden')}
+function orderRevolving(i){const ch=revolvingData[i];const card=document.getElementById('rev-'+i);const back=card.dataset.back;const chrome=card.dataset.chrome==='true';const label=back==='hb'?'High Back':'Medium Back';const base=back==='hb'?ch.price_high_back:ch.price_medium_back;const price=base+(chrome?(ch.chrome_upgrade_price||175):0);const gst=Math.round(price*GST_RATE);currentOrder={type:'revolving',label:`${ch.name} — ${label}${chrome?' + Chrome Base':''}`,details:`Revolving Chair | ${label}${chrome?' | Chrome Beeta Base':''}`,subtotal:price,gst,total:price+gst};openOrder('chair')}
+function orderVisitor(i){const ch=visitorData[i];const card=document.getElementById('vis-'+i);const variant=card.dataset.variant==='vis'?'Visitor':'Revolving';const price=variant==='Visitor'?ch.price_visitor:ch.price_revolving;const gst=Math.round(price*GST_RATE);currentOrder={type:'visitor',label:`${ch.name} — ${variant}`,details:`Visitor Chair | ${variant} variant`,subtotal:price,gst,total:price+gst};openOrder('chair')}
+function orderCafeteria(i){const ch=cafeteriaData[i];const gst=Math.round(ch.price*GST_RATE);currentOrder={type:'cafeteria',label:ch.name,details:'Cafeteria Chair',subtotal:ch.price,gst,total:ch.price+gst};openOrder('chair')}
+function closeModal(){document.getElementById('order-modal').classList.add('hidden')}
+document.getElementById('send-whatsapp-btn').addEventListener('click',()=>{const phone=document.getElementById('order-phone').value.trim();const location=document.getElementById('order-location').value.trim();const qty=document.getElementById('order-qty').value||1;const notes=document.getElementById('order-notes').value.trim();if(!phone){alert('Please enter a phone number');return}if(!location){alert('Please enter a delivery location');return}let msg=`*New Order — AHL (Adeshwar Homes)*\n\n📋 *${currentOrder.label}*\n`;if(currentOrder.items)currentOrder.items.forEach(it=>{msg+=`  • ${it.component}: ${it.selection} — ${fmt(it.price)}\n`});if(currentOrder.details)msg+=`${currentOrder.details}\n`;msg+=`\n💰 Subtotal: ${fmt(currentOrder.subtotal)}\n🧾 GST (18%): ${fmt(currentOrder.gst)}\n✅ *Total: ${fmt(currentOrder.total)}*\n📦 Qty: ${qty}\n📞 Phone: ${phone}\n📍 Delivery: ${location}`;if(notes)msg+=`\n📝 Notes: ${notes}`;msg+=`\n\n_Delivery charges as per actual. Prices Ex-Factory._\n_Payment: 50% advance, balance with delivery._\n_Warranty: 1 year from invoice date._`;sb.from('orders').insert({user_id:currentUser.id,order_type:currentOrder.type,selections:currentOrder.items||{name:currentOrder.label,details:currentOrder.details},subtotal:currentOrder.subtotal,gst_percent:18,gst_amount:currentOrder.gst,total:currentOrder.total,customer_phone:phone,delivery_location:location,notes:notes||null});window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,'_blank');closeModal()});
+document.getElementById('order-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+initAuth();
+</script>
+</body>
+</html>
