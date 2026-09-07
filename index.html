@@ -250,10 +250,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 <script>
 const SUPABASE_URL='https://qgadczcrtwxbxkenuawn.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnYWRjemNydHd4YnhrZW51YXduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2NzkwNzQsImV4cCI6MjEwNDI1NTA3NH0.EbqL_PIBfv7JDwzKdd6mTaXuMephgKRHF58BQ5NVRyg';
-const WHATSAPP_NUMBER='919739166940';
+const WHATSAPP_NUMBER_FALLBACK='919739166940'; // used only if the config table is unreachable
 const GST_RATE=0.18;
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-let currentUser=null,currentProfile=null,partsData={categories:[],options:[]},revolvingData=[],visitorData=[],cafeteriaData=[];
+let currentUser=null,currentProfile=null,appConfig={},partsData={categories:[],options:[]},revolvingData=[],visitorData=[],cafeteriaData=[];
 let cart=[],cartIdCounter=1;
 function fmt(n){return'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0})}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(()=>t.classList.add('hidden'),1400)}
@@ -263,8 +263,9 @@ async function initAuth(){const{data:{session}}=await sb.auth.getSession();if(se
 document.getElementById('login-btn').addEventListener('click',async()=>{const email=document.getElementById('login-email').value.trim();const pass=document.getElementById('login-pass').value;const err=document.getElementById('login-error');err.textContent='';if(!email||!pass){err.textContent='Enter email and password';return}const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){err.textContent=error.message;return}currentUser=data.user;showApp()});
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-btn').click()});
 document.getElementById('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();currentUser=null;currentProfile=null;cart=[];updateCartBadge();document.getElementById('app').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden')});
-async function showApp(){document.getElementById('login-page').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('user-email').textContent=currentUser.email;await loadProfile();await loadAllData();showPage('dashboard')}
+async function showApp(){document.getElementById('login-page').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('user-email').textContent=currentUser.email;await loadProfile();await loadConfig();await loadAllData();showPage('dashboard')}
 async function loadProfile(){const{data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();currentProfile=data||null}
+async function loadConfig(){const{data}=await sb.from('config').select('*');appConfig={};(data||[]).forEach(r=>appConfig[r.key]=r.value)}
 async function loadAllData(){const[a,b,c,d,e]=await Promise.all([sb.from('part_categories').select('*').order('display_order'),sb.from('part_options').select('*').order('display_order'),sb.from('revolving_chairs').select('*').order('display_order'),sb.from('visitor_chairs').select('*').order('display_order'),sb.from('cafeteria_chairs').select('*').order('display_order')]);partsData.categories=a.data||[];partsData.options=b.data||[];revolvingData=c.data||[];visitorData=d.data||[];cafeteriaData=e.data||[];renderParts();renderRevolving();renderVisitor();renderCafeteria()}
 function showPage(p){['dashboard','parts','revolving','visitor','cafeteria'].forEach(x=>document.getElementById('page-'+x).classList.add('hidden'));document.getElementById('page-'+p).classList.remove('hidden');window.scrollTo(0,0)}
 
@@ -308,7 +309,7 @@ function addPartsToCart(){
 // ---------- REVOLVING ----------
 function colorSelectHtml(colors,idPrefix,idx){if(!colors||!colors.length)return'';return `<select class="color-select" id="${idPrefix}-color-${idx}"><option value="">Select Color *</option>${colors.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`}
 function chairImagesHtml(ch,idPrefix,idx){
-  const imgs=(ch.image_urls&&ch.image_urls.length?ch.image_urls:(ch.image_url?[ch.image_url]:[])).filter(Boolean).slice(0,4);
+  const imgs=(ch.image_urls||[]).filter(Boolean).slice(0,4);
   if(!imgs.length)return'';
   if(imgs.length===1)return`<img class="chair-img" src="${imgs[0]}" onerror="this.style.display='none'"/>`;
   const dots=imgs.map((_,di)=>`<button class="img-dot${di===0?' active':''}" onclick="setChairImg('${idPrefix}',${idx},${di})"></button>`).join('');
@@ -441,7 +442,8 @@ document.getElementById('send-whatsapp-btn').addEventListener('click',async()=>{
     console.error('Order insert error:',error);
   }
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,'_blank');
+  const waNumber=appConfig.whatsapp_number||WHATSAPP_NUMBER_FALLBACK;
+  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`,'_blank');
   if(!error){cart=[];updateCartBadge();closeCheckoutModal()}
 });
 
